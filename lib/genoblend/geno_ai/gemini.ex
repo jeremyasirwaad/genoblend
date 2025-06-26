@@ -30,16 +30,18 @@ defmodule Genoblend.GenoAi.Gemini do
   # -- helpers ----------------------------------------------------------------
 
   defp fetch_api_key do
-    case System.get_env("GEMINI_API_KEY") do
-      nil -> {:error, :missing_api_key}
-      key -> {:ok, key}
-    end
+    api_key = System.get_env("GEMINI_API_KEY")
+    {:ok, api_key}
   end
 
   defp build_body(system_prompt, user_prompt) do
     payload = %{
+      "systemInstruction" => %{
+        "parts" => [
+          %{"text" => system_prompt}
+        ]
+      },
       "contents" => [
-        %{"role" => "system", "parts" => [%{"text" => system_prompt}]},
         %{"role" => "user", "parts" => [%{"text" => user_prompt}]}
       ],
       "generationConfig" => %{"responseMimeType" => "text/plain"}

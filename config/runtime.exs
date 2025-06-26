@@ -114,4 +114,7 @@ if config_env() == :prod do
   #     config :swoosh, :api_client, Swoosh.ApiClient.Hackney
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+
+  # Load Gemini API key (used by Genoblend.GenoAi.Gemini)
+  config :genoblend, :gemini_api_key, System.get_env("GEMINI_API_KEY")
 end
