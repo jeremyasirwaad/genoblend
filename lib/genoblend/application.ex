@@ -18,6 +18,7 @@ defmodule Genoblend.Application do
       # {Genoblend.Worker, arg},
       # Start to serve requests, typically the last entry
       {Genoblend.Genservers.GenepoolManager, []},
+      {Genoblend.Genservers.GenepoolBroadcaster, []},
       GenoblendWeb.Endpoint
     ]
 
