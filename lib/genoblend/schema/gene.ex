@@ -1,9 +1,9 @@
 defmodule Genoblend.Schema.Gene do
-  alias Genoblend.Schema.{User, Breeding}
+  alias Genoblend.Schema.User
   use Ecto.Schema
   import Ecto.Changeset
 
-  @primary_key {:id, :binary_id, autogenerate: true}
+  @primary_key {:id, :binary_id, autogenerate: false}
   @foreign_key_type :binary_id
 
   schema "genes" do
@@ -17,13 +17,12 @@ defmodule Genoblend.Schema.Gene do
     field :is_alive, :boolean, default: true
 
     belongs_to :user, User
-    belongs_to :breeding, Breeding
     timestamps()
   end
 
   def changeset(gene, attrs) do
     gene
-    |> cast(attrs, [:name, :x_coordinate, :y_coordinate, :traits, :description, :color, :dead_at, :is_alive, :user_id])
-    |> validate_required([:name, :x_coordinate, :y_coordinate, :traits, :description, :color, :is_alive])
+    |> cast(attrs, [:id, :name, :x_coordinate, :y_coordinate, :traits, :description, :color, :dead_at, :is_alive, :user_id])
+    |> validate_required([:id, :name, :x_coordinate, :y_coordinate, :traits, :description, :color, :is_alive, :user_id])
   end
 end

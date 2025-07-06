@@ -29,6 +29,7 @@ defmodule Genoblend.Genservers.GenepoolManager do
 
   @spec start_inital_genes() :: list()
   def start_inital_genes() do
+    Genes.delete_all_genes()
     initial_genes = Const.get_default_genes()
 
     # Save initial genes to database before starting them
@@ -100,14 +101,24 @@ defmodule Genoblend.Genservers.GenepoolManager do
   end
 
   def declare_fusion(gene_1_id, gene_2_id) do
-    case create_new_gene_from_parents(gene_1_id, gene_2_id) do
-      {:ok, new_gene_id, _pid} ->
+    # Get parent data before killing them to prevent race conditions
+    case get_parents(gene_1_id, gene_2_id) do
+      {:ok, parent_1_state, parent_2_state} ->
+        # Kill parent genes immediately to prevent other fusions
         kill_gene(gene_1_id)
         kill_gene(gene_2_id)
-        Logger.info("Declared fusion between genes #{gene_1_id} and #{gene_2_id}, created new gene #{new_gene_id}")
-        {:ok, new_gene_id}
+
+        # Create new gene using preserved parent data
+        case create_new_gene_from_parent_data(gene_1_id, gene_2_id, parent_1_state, parent_2_state) do
+          {:ok, new_gene_id, _pid} ->
+            Logger.info("Declared fusion between genes #{gene_1_id} and #{gene_2_id}, created new gene #{new_gene_id}")
+            {:ok, new_gene_id}
+          {:error, reason} ->
+            Logger.error("Failed to create offspring for fusion between #{gene_1_id} and #{gene_2_id}: #{inspect(reason)}")
+            {:error, reason}
+        end
       {:error, reason} ->
-        Logger.error("Failed to create offspring for fusion between #{gene_1_id} and #{gene_2_id}: #{inspect(reason)}")
+        Logger.error("Failed to get parent genes for fusion between #{gene_1_id} and #{gene_2_id}: #{inspect(reason)}")
         {:error, reason}
     end
   end
@@ -117,8 +128,8 @@ defmodule Genoblend.Genservers.GenepoolManager do
     with {:ok, parent_1_state, parent_2_state} <- get_parents(parent_1_id, parent_2_id),
          {:ok, character_data} <- create_new_gene(parent_1_state, parent_2_state) do
 
-      # Create breeding record and save child gene to database
-      case save_child_gene_with_breeding(parent_1_id, parent_2_id, character_data) do
+      # Save child gene to database first
+      case save_child_gene_to_database(parent_1_id, parent_2_id, character_data) do
         {:ok, _child_gene} ->
           # Start the gene process after saving to database
           case start_new_gene(character_data) do
@@ -140,65 +151,73 @@ defmodule Genoblend.Genservers.GenepoolManager do
     end
   end
 
-    defp save_child_gene_with_breeding(parent_1_id, parent_2_id, character_data) do
-    # First ensure parent genes exist in database
-    case ensure_parents_in_database(parent_1_id, parent_2_id) do
-      :ok ->
-        # Convert character_data to gene attributes format
-        gene_attrs = %{
-          id: character_data.id,
-          name: character_data.name,
-          x_coordinate: character_data.x_coordinate,
-          y_coordinate: character_data.y_coordinate,
-          traits: character_data.traits,
-          description: character_data.description,
-          color: character_data.color,
-          dead_at: character_data.dead_at,
-          is_alive: character_data.is_alive,
-          user_id: character_data.user_id
-        }
-
-        justification = Map.get(character_data, :justification, "Generated from AI breeding")
-
-        case Genes.create_child_gene_with_breeding(parent_1_id, parent_2_id, gene_attrs, justification) do
-          {:ok, child_gene} ->
-            Logger.info("Successfully saved child gene #{child_gene.name} with breeding record")
-            {:ok, child_gene}
+  def create_new_gene_from_parent_data(parent_1_id, parent_2_id, parent_1_state, parent_2_state) do
+    case create_new_gene(parent_1_state, parent_2_state) do
+      {:ok, character_data} ->
+        # Save child gene to database first
+        case save_child_gene_to_database(parent_1_id, parent_2_id, character_data) do
+          {:ok, _child_gene} ->
+            # Start the gene process after saving to database
+            case start_new_gene(character_data) do
+              {:ok, gene_id, pid} ->
+                Logger.info("Successfully created and started new gene from parent data #{parent_1_id} and #{parent_2_id}")
+                {:ok, gene_id, pid}
+              {:error, reason} ->
+                Logger.error("Failed to start new gene: #{inspect(reason)}")
+                {:error, reason}
+            end
           {:error, reason} ->
-            Logger.error("Failed to save child gene with breeding: #{inspect(reason)}")
+            Logger.error("Failed to save child gene to database: #{inspect(reason)}")
             {:error, reason}
         end
       {:error, reason} ->
-        Logger.error("Failed to ensure parent genes in database: #{inspect(reason)}")
+        Logger.error("Failed to create new gene from parent data: #{inspect(reason)}")
         {:error, reason}
     end
   end
 
-      defp ensure_parents_in_database(parent_1_id, parent_2_id) do
-    Logger.info("Ensuring both parent genes exist in database: #{parent_1_id} and #{parent_2_id}")
+  defp save_child_gene_to_database(parent_1_id, parent_2_id, character_data) do
+    # Convert character_data to gene attributes format
+    gene_attrs = %{
+      id: character_data.id,
+      name: character_data.name,
+      x_coordinate: character_data.x_coordinate,
+      y_coordinate: character_data.y_coordinate,
+      traits: character_data.traits,
+      description: character_data.description,
+      color: character_data.color,
+      dead_at: character_data.dead_at,
+      is_alive: character_data.is_alive,
+      user_id: character_data.user_id
+    }
 
-    with :ok <- ensure_gene_in_database(parent_1_id),
-         :ok <- ensure_gene_in_database(parent_2_id) do
-      Logger.info("Both parent genes successfully ensured in database")
-      :ok
-    else
+    justification = Map.get(character_data, :justification, "Generated from AI breeding")
+
+    # Ensure parent genes exist in database before creating child
+    ensure_parent_genes_in_db(parent_1_id, parent_2_id)
+
+    case Genes.create_child_gene_with_breeding(parent_1_id, parent_2_id, gene_attrs, justification) do
+      {:ok, child_gene} ->
+        Logger.info("Successfully saved child gene #{child_gene.name} with breeding record")
+        {:ok, child_gene}
       {:error, reason} ->
-        Logger.error("Failed to ensure parents in database: #{inspect(reason)}")
+        Logger.error("Failed to save child gene with breeding: #{inspect(reason)}")
         {:error, reason}
     end
   end
 
-      defp ensure_gene_in_database(gene_id) do
-    Logger.info("Ensuring gene #{gene_id} exists in database")
+  defp ensure_parent_genes_in_db(parent_1_id, parent_2_id) do
+    ensure_gene_in_db(parent_1_id)
+    ensure_gene_in_db(parent_2_id)
+  end
 
-    # First check if gene already exists in database
+  defp ensure_gene_in_db(gene_id) do
+    # Check if gene already exists in database
     case Genes.get_gene(gene_id) do
       nil ->
-        Logger.info("Gene #{gene_id} not found in database, attempting to create from ETS")
         # Gene doesn't exist in database, get it from ETS and save it
         case :ets.lookup(@ets_table, gene_id) do
           [{^gene_id, gene_state}] ->
-            Logger.info("Found gene #{gene_state.name} in ETS, saving to database")
             gene_attrs = %{
               id: gene_state.id,
               name: gene_state.name,
@@ -213,20 +232,16 @@ defmodule Genoblend.Genservers.GenepoolManager do
             }
 
             case Genes.get_or_create_gene(gene_attrs) do
-              {:ok, gene} ->
-                Logger.info("Successfully saved parent gene #{gene.name} (#{gene.id}) to database")
-                :ok
+              {:ok, _gene} ->
+                Logger.info("Successfully saved parent gene to database")
               {:error, reason} ->
-                Logger.error("Failed to save parent gene #{gene_state.name} to database: #{inspect(reason)}")
-                {:error, reason}
+                Logger.error("Failed to save parent gene to database: #{inspect(reason)}")
             end
           [] ->
             Logger.error("Parent gene #{gene_id} not found in ETS table")
-            {:error, :gene_not_found}
         end
-      existing_gene ->
-        Logger.info("Gene #{existing_gene.name} (#{gene_id}) already exists in database")
-        :ok
+      _existing_gene ->
+        Logger.info("Gene #{gene_id} already exists in database")
     end
   end
 

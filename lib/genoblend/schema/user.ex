@@ -3,7 +3,7 @@ defmodule Genoblend.Schema.User do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @primary_key {:id, :binary_id, autogenerate: true}
+  @primary_key {:id, :binary_id, autogenerate: false}
   @foreign_key_type :binary_id
 
   schema "users" do
@@ -17,7 +17,7 @@ defmodule Genoblend.Schema.User do
 
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:name, :ip, :location])
-    |> validate_required([:name, :ip, :location])
+    |> cast(attrs, [:id, :name, :ip, :location])
+    |> validate_required([:id, :name, :ip, :location])
   end
 end

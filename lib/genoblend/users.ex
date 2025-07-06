@@ -3,8 +3,10 @@ defmodule Genoblend.Users do
   alias Genoblend.Repo
 
   def create_user(attrs) do
+    attrs_with_id = Map.put_new(attrs, :id, Ecto.UUID.generate())
+
     %User{}
-    |> User.changeset(attrs)
+    |> User.changeset(attrs_with_id)
     |> Repo.insert()
   end
 
