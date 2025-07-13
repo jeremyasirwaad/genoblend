@@ -1,5 +1,5 @@
 defmodule Genoblend.Genservers.GenepoolManager do
-  alias Genoblend.Genservers.GenesManager
+  alias Genoblend.Genservers.{GenesManager, GenestatsStatsManager, GeneeventBroadcaster}
   alias Genoblend.Const
   alias Genoblend.Genes
   use GenServer
@@ -35,14 +35,26 @@ defmodule Genoblend.Genservers.GenepoolManager do
     # Save initial genes to database before starting them
     Enum.each(initial_genes, fn gene_data ->
       case Genes.create_gene(gene_data) do
-        {:ok, _gene} ->
+        {:ok, gene} ->
           Logger.info("Successfully saved initial gene #{gene_data.name} to database")
+          # Broadcast gene created event for initial genes
+          GenestatsStatsManager.broadcast_on_gene_created(gene.id)
+          Logger.info("Broadcasting gene birth for initial gene: #{gene_data.name}")
+          try do
+            GeneeventBroadcaster.broadcast_gene_birth(gene_data.name)
+          rescue
+            error ->
+              Logger.error("Failed to broadcast gene birth: #{inspect(error)}")
+          end
         {:error, changeset} ->
           Logger.error("Failed to save initial gene #{gene_data.name} to database: #{inspect(changeset)}")
       end
     end)
 
     GenesManager.start_inital_genes(initial_genes)
+    
+    # Broadcast environment started event with delay to ensure broadcaster is ready
+    Process.send_after(self(), :broadcast_environment_started, 1000)
   end
 
   def add_gene(gene_id, pid) do
@@ -91,6 +103,18 @@ defmodule Genoblend.Genservers.GenepoolManager do
     case Genes.kill_gene(gene_id) do
       {:ok, _gene} ->
         Logger.info("Successfully marked gene #{gene_id} as dead in database")
+        # Broadcast gene killed event
+        GenestatsStatsManager.broadcast_on_gene_killed(gene_id)
+        
+        # Get gene name from ETS for event broadcasting
+        case :ets.lookup(@ets_table, gene_id) do
+          [{^gene_id, gene_state}] ->
+            gene_name = Map.get(gene_state, :name, "Unknown Gene")
+            age_seconds = calculate_gene_age(gene_state)
+            GeneeventBroadcaster.broadcast_gene_death(gene_name, age_seconds)
+          [] ->
+            GeneeventBroadcaster.broadcast_gene_death("Unknown Gene")
+        end
       {:error, reason} ->
         Logger.error("Failed to mark gene #{gene_id} as dead in database: #{inspect(reason)}")
     end
@@ -112,6 +136,21 @@ defmodule Genoblend.Genservers.GenepoolManager do
         case create_new_gene_from_parent_data(gene_1_id, gene_2_id, parent_1_state, parent_2_state) do
           {:ok, new_gene_id, _pid} ->
             Logger.info("Declared fusion between genes #{gene_1_id} and #{gene_2_id}, created new gene #{new_gene_id}")
+            # Broadcast fusion declared event
+            GenestatsStatsManager.broadcast_on_fusion_declared(gene_1_id, gene_2_id, new_gene_id)
+            
+            # Get names for fusion event broadcasting (happens first)
+            parent1_name = Map.get(parent_1_state, :name, "Unknown")
+            parent2_name = Map.get(parent_2_state, :name, "Unknown")
+            
+            # Get child name from ETS table
+            child_name = case :ets.lookup(@ets_table, new_gene_id) do
+              [{^new_gene_id, child_state}] -> Map.get(child_state, :name, "Unknown Child")
+              [] -> "Unknown Child"
+            end
+            
+            # First broadcast fusion, then birth will be handled in gene creation
+            GeneeventBroadcaster.broadcast_fusion_declared(parent1_name, parent2_name, child_name)
             {:ok, new_gene_id}
           {:error, reason} ->
             Logger.error("Failed to create offspring for fusion between #{gene_1_id} and #{gene_2_id}: #{inspect(reason)}")
@@ -135,6 +174,15 @@ defmodule Genoblend.Genservers.GenepoolManager do
           case start_new_gene(character_data) do
             {:ok, gene_id, pid} ->
               Logger.info("Successfully created and started new gene from parents #{parent_1_id} and #{parent_2_id}")
+              # Broadcast gene created event
+              GenestatsStatsManager.broadcast_on_gene_created(gene_id)
+              
+              # Broadcast gene birth event with parent names
+              parent1_name = Map.get(parent_1_state, :name, "Unknown")
+              parent2_name = Map.get(parent_2_state, :name, "Unknown") 
+              child_name = Map.get(character_data, :name, "Unknown Child")
+              GeneeventBroadcaster.broadcast_gene_birth(child_name, parent1_name, parent2_name)
+              
               {:ok, gene_id, pid}
             {:error, reason} ->
               Logger.error("Failed to start new gene: #{inspect(reason)}")
@@ -161,6 +209,15 @@ defmodule Genoblend.Genservers.GenepoolManager do
             case start_new_gene(character_data) do
               {:ok, gene_id, pid} ->
                 Logger.info("Successfully created and started new gene from parent data #{parent_1_id} and #{parent_2_id}")
+                # Broadcast gene created event
+                GenestatsStatsManager.broadcast_on_gene_created(gene_id)
+                
+                # Broadcast gene birth event with parent names
+                parent1_name = Map.get(parent_1_state, :name, "Unknown")
+                parent2_name = Map.get(parent_2_state, :name, "Unknown")
+                child_name = Map.get(character_data, :name, "Unknown Child") 
+                GeneeventBroadcaster.broadcast_gene_birth(child_name, parent1_name, parent2_name)
+                
                 {:ok, gene_id, pid}
               {:error, reason} ->
                 Logger.error("Failed to start new gene: #{inspect(reason)}")
@@ -418,4 +475,19 @@ defmodule Genoblend.Genservers.GenepoolManager do
   defp format_traits(traits) when is_list(traits), do: Enum.join(traits, ", ")
   defp format_traits(traits) when is_binary(traits), do: traits
   defp format_traits(_), do: ""
+
+  defp calculate_gene_age(gene_state) do
+    case Map.get(gene_state, :created_at) do
+      nil -> nil
+      created_at -> 
+        now = DateTime.utc_now()
+        DateTime.diff(now, created_at, :second)
+    end
+  end
+
+  def handle_info(:broadcast_environment_started, state) do
+    Logger.info("Broadcasting environment started event")
+    GeneeventBroadcaster.broadcast_environment_started()
+    {:noreply, state}
+  end
 end

@@ -67,12 +67,12 @@ defmodule Genoblend.Genservers.GenepoolBroadcaster do
       # Get connected clients count
 
       # Broadcast to all clients subscribed to room:lobby
-      GenoblendWeb.Endpoint.broadcast("room:lobby", "genes_update", %{
+      GenoblendWeb.Endpoint.broadcast("room:genes", "genes_update", %{
         genes: genes,
         timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
       })
 
-      Logger.warn("Broadcasted #{length(genes)} genes to room:lobby")
+      Logger.warn("Broadcasted #{length(genes)} genes to room:genes")
     rescue
       error ->
         Logger.error("Failed to broadcast gene data: #{inspect(error)}")

@@ -17,9 +17,11 @@ defmodule Genoblend.Application do
       # Start a worker by calling: Genoblend.Worker.start_link(arg)
       # {Genoblend.Worker, arg},
       # Start to serve requests, typically the last entry
-      {Genoblend.Genservers.GenepoolManager, []},
+      GenoblendWeb.Endpoint,
       {Genoblend.Genservers.GenepoolBroadcaster, []},
-      GenoblendWeb.Endpoint
+      {Genoblend.Genservers.GenestatsStatsManager, []},
+      {Genoblend.Genservers.GeneeventBroadcaster, []},
+      {Genoblend.Genservers.GenepoolManager, []}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
