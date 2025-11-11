@@ -7,13 +7,14 @@
 # General application configuration
 import Config
 
-config :genoblend,
-  ecto_repos: [Genoblend.Repo],
-  generators: [timestamp_type: :utc_datetime, binary_id: true]
+# Database disabled - no Ecto repos needed
+# config :genoblend,
+#   ecto_repos: [Genoblend.Repo],
+#   generators: [timestamp_type: :utc_datetime, binary_id: true]
 
 # Configure Ecto to use UUID as default primary key
-config :genoblend, Genoblend.Repo,
-  migration_primary_key: [name: :id, type: :binary_id]
+# config :genoblend, Genoblend.Repo,
+#   migration_primary_key: [name: :id, type: :binary_id]
 
 # Configures the endpoint
 config :genoblend, GenoblendWeb.Endpoint,

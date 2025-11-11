@@ -1,14 +1,14 @@
 import Config
 
-# Configure your database
-config :genoblend, Genoblend.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "genoblend",
-  stacktrace: true,
-  show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+# Database disabled - no longer needed
+# config :genoblend, Genoblend.Repo,
+#   username: "postgres",
+#   password: "postgres",
+#   hostname: "localhost",
+#   database: "genoblend",
+#   stacktrace: true,
+#   show_sensitive_data_on_connection_error: true,
+#   pool_size: 10
 
 # For development, we disable any cache and enable
 # debugging and code reloading.

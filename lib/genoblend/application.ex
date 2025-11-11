@@ -9,7 +9,7 @@ defmodule Genoblend.Application do
   def start(_type, _args) do
     children = [
       GenoblendWeb.Telemetry,
-      Genoblend.Repo,
+      # Genoblend.Repo,  # Disabled - no database needed
       {DNSCluster, query: Application.get_env(:genoblend, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Genoblend.PubSub},
       # Start the Finch HTTP client for sending emails
