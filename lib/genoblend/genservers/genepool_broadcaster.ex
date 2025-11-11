@@ -72,7 +72,7 @@ defmodule Genoblend.Genservers.GenepoolBroadcaster do
         timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
       })
 
-      Logger.warn("Broadcasted #{length(genes)} genes to room:genes")
+      Logger.warning("Broadcasted #{length(genes)} genes to room:genes")
     rescue
       error ->
         Logger.error("Failed to broadcast gene data: #{inspect(error)}")
