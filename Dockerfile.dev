@@ -1,0 +1,40 @@
+ARG ELIXIR_VERSION=1.18.3
+ARG OTP_VERSION=27.3.3
+ARG DEBIAN_VERSION=bullseye-20251103-slim
+
+FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}
+
+# Install build dependencies
+RUN apt-get update -y && apt-get install -y \
+    build-essential \
+    git \
+    inotify-tools \
+    && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# Set working directory
+WORKDIR /app
+
+# Install hex and rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# Set development environment
+ENV MIX_ENV=dev
+
+# Copy dependency files
+COPY mix.exs mix.lock ./
+
+# Install dependencies
+RUN mix deps.get
+
+# Copy application code (this will be overridden by volume mount in docker-compose)
+COPY . .
+
+# Compile dependencies
+RUN mix deps.compile
+
+# Expose Phoenix port
+EXPOSE 4000
+
+# The command will be specified in docker-compose.yml
+CMD ["iex", "--name", "genoblend", "--cookie", "genoblend", "-S", "mix", "phx.server"]

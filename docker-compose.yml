@@ -1,18 +1,20 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:14.17
-    container_name: genoblend_db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: genoblend
+  genoblend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: genoblend_app
     ports:
-      - "5432:5432"
+      - "4000:4000"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
+      - .:/app
+      - /app/deps
+      - /app/_build
+    environment:
+      - MIX_ENV=dev
+      - PHX_HOST=localhost
+    command: iex --sname genoblend --cookie genoblend -S mix phx.server
+    stdin_open: true
+    tty: true
