@@ -2,7 +2,8 @@ defmodule Genoblend.Const do
   @moduledoc false
 
   def get_default_genes() do
-    Enum.take(get_gene_pool(), 10)
+    # Enum.take(get_gene_pool(), 10)
+    get_gene_pool()
   end
 
   def get_gene_pool() do
@@ -156,7 +157,7 @@ defmodule Genoblend.Const do
         name: "Croissant Moonlight",
         traits: ["Elegant", "Mysterious", "Aloof"],
         description: "Graceful in movement, keeps secrets close, maintains distance from others.",
-        color: "#e6e6fa"
+        color: "#9370db"
       },
       %{
         name: "Donut Glitter",
@@ -216,7 +217,7 @@ defmodule Genoblend.Const do
         name: "Pudding Wiggle",
         traits: ["Soft", "Jiggly", "Unstable"],
         description: "Gentle and yielding, moves in amusing ways, lacks firm foundation.",
-        color: "#fff8dc"
+        color: "#ffb347"
       },
       %{
         name: "Jellybean Dream",
@@ -285,7 +286,7 @@ defmodule Genoblend.Const do
         name: "Peach Fuzz",
         traits: ["Soft", "Warm", "Fuzzy"],
         description: "Gentle and tender, radiates kindness, slightly unclear in communication.",
-        color: "#ffdab9"
+        color: "#ff6b6b"
       },
       %{
         name: "Mango Tango",
@@ -305,7 +306,7 @@ defmodule Genoblend.Const do
         traits: ["Laid-back", "Tropical", "Hard-shelled"],
         description:
           "Relaxed and easy-going, island mentality, tough exterior hiding soft inside.",
-        color: "#f5f5dc"
+        color: "#8b5a00"
       },
       %{
         name: "Banana Split",
@@ -368,13 +369,13 @@ defmodule Genoblend.Const do
         name: "Apricot Breeze",
         traits: ["Gentle", "Rare", "Seasonal"],
         description: "Soft and subtle, not often encountered, only around at certain times.",
-        color: "#fbceb1"
+        color: "#ff7f50"
       },
       %{
         name: "Papaya Sunrise",
         traits: ["Tropical", "Soft", "Digestive"],
         description: "Exotic and warm, yielding nature, helps process difficult things.",
-        color: "#ffefd5"
+        color: "#ff9933"
       },
       %{
         name: "Dragon Fruit Flame",
@@ -442,13 +443,13 @@ defmodule Genoblend.Const do
         name: "Queso Blanco",
         traits: ["Smooth", "White", "Privileged"],
         description: "Creamy and even, benefits from unearned advantages, generally pleasant.",
-        color: "#f5f5f5"
+        color: "#ffdd44"
       },
       %{
         name: "Tofu Scramble",
         traits: ["Versatile", "Bland", "Healthy"],
         description: "Adapts to any situation, lacks strong personality, makes good choices.",
-        color: "#fffdd0"
+        color: "#ffe066"
       },
       %{
         name: "Tempeh Tantrum",
@@ -509,7 +510,7 @@ defmodule Genoblend.Const do
         name: "Cabbage Patch",
         traits: ["Adopted", "Round", "Versatile"],
         description: "Came from unexpected origins, well-rounded, fits many situations.",
-        color: "#daf0ce"
+        color: "#7cb342"
       },
       %{
         name: "Carrot Top",
@@ -540,7 +541,7 @@ defmodule Genoblend.Const do
         name: "Potato Couch",
         traits: ["Lazy", "Comfortable", "Starchy"],
         description: "Avoids physical activity, creates comfort, full of carbohydrates.",
-        color: "#e2c1a8"
+        color: "#d4a574"
       },
       %{
         name: "Sweet Potato",
@@ -552,13 +553,13 @@ defmodule Genoblend.Const do
         name: "Onion Layers",
         traits: ["Complex", "Tearful", "Pungent"],
         description: "Many depths to personality, makes people cry, strong presence.",
-        color: "#e5d8bd"
+        color: "#daa520"
       },
       %{
         name: "Garlic Bread",
         traits: ["Popular", "Garlicky", "Improved"],
         description: "Everyone loves them, defines their personality, better than original.",
-        color: "#f4e8c1"
+        color: "#d2b48c"
       },
       %{
         name: "Pepper Shaker",
@@ -570,7 +571,7 @@ defmodule Genoblend.Const do
         name: "Salt Bae",
         traits: ["Dramatic", "Excessive", "Viral"],
         description: "Makes everything theatrical, goes overboard, famous on internet.",
-        color: "#ffffff"
+        color: "#c0c0c0"
       },
       %{
         name: "Basil Brush",
@@ -673,13 +674,13 @@ defmodule Genoblend.Const do
         name: "Butter Fingers",
         traits: ["Clumsy", "Smooth", "Dropping"],
         description: "Drops everything, has suave moments, can't hold onto things.",
-        color: "#ffe5b4"
+        color: "#ffd700"
       },
       %{
         name: "Cream Dream",
         traits: ["Rich", "Smooth", "Luxurious"],
         description: "Lives in comfort, moves elegantly, indulgent lifestyle.",
-        color: "#fffdd0"
+        color: "#ffe4b5"
       },
       %{
         name: "Cheese Louise",
@@ -709,7 +710,7 @@ defmodule Genoblend.Const do
         name: "Chicken Little",
         traits: ["Paranoid", "Small", "Warning"],
         description: "Thinks sky is falling, tiny in size, tries to alert others.",
-        color: "#fff8dc"
+        color: "#f4a460"
       },
       %{
         name: "Beef Wellington",
@@ -727,7 +728,7 @@ defmodule Genoblend.Const do
         name: "Lamb Chop",
         traits: ["Cute", "Puppet", "Shari"],
         description: "Adorable appearance, controlled by another, entertainment background.",
-        color: "#ffe4e1"
+        color: "#ffb6c1"
       },
       %{
         name: "Shrimp Boat",
@@ -763,13 +764,13 @@ defmodule Genoblend.Const do
         name: "Clam Chowder",
         traits: ["Creamy", "Comforting", "Regional"],
         description: "Smooth and rich, makes people feel better, divides by geography.",
-        color: "#fff8dc"
+        color: "#f5deb3"
       },
       %{
         name: "Oyster Perpetual",
         traits: ["Luxurious", "Timeless", "Expensive"],
         description: "High-end lifestyle, lasts forever, costs fortune.",
-        color: "#e5e4e2"
+        color: "#708090"
       },
       %{
         name: "Mussel Beach",

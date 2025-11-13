@@ -112,6 +112,9 @@ defmodule Genoblend.Genservers.GenepoolManager do
     # Kill the gene process
     GenesManager.kill_gene(gene_id)
     Registry.unregister(Genoblend.GeneRegistry, gene_id)
+
+    # Check alive gene count and replenish if needed
+    check_and_replenish_genes()
   end
 
   def declare_fusion(gene_1_id, gene_2_id) do
@@ -286,5 +289,54 @@ defmodule Genoblend.Genservers.GenepoolManager do
     Logger.info("Broadcasting environment started event")
     GeneeventBroadcaster.broadcast_environment_started()
     {:noreply, state}
+  end
+
+  # Counts alive genes in ETS
+  defp count_alive_genes() do
+    :ets.tab2list(@ets_table)
+    |> Enum.count(fn {_id, state} -> Map.get(state, :is_alive, true) end)
+  end
+
+  # Checks if alive gene count is below threshold and replenishes if needed
+  defp check_and_replenish_genes() do
+    alive_count = count_alive_genes()
+    Logger.info("Current alive gene count: #{alive_count}")
+
+    if alive_count < 10 do
+      Logger.info("Gene count below 10! Replenishing with 100 new genes...")
+      replenish_genes(100)
+    end
+  end
+
+  # Creates and starts multiple new genes from the gene pool
+  defp replenish_genes(count) do
+    gene_pool = Const.get_gene_pool()
+
+    Enum.each(1..count, fn _ ->
+      # Randomly select a gene from the pool
+      selected_gene = Enum.random(gene_pool)
+
+      # Add game-specific properties
+      gene_data = selected_gene
+        |> Map.put(:id, Ecto.UUID.generate())
+        |> Map.put(:x_coordinate, Enum.random(0..200))
+        |> Map.put(:y_coordinate, Enum.random(0..200))
+        |> Map.put(:dead_at, nil)
+        |> Map.put(:is_alive, true)
+        |> Map.put(:user_id, "8dadde5c-1ce1-4d63-94cd-eb664a673927")
+
+      # Start the gene
+      case start_new_gene(gene_data) do
+        {:ok, gene_id, _pid} ->
+          Logger.info("Replenished gene: #{selected_gene.name} (#{gene_id})")
+          # Broadcast gene created and birth events
+          GenestatsStatsManager.broadcast_on_gene_created(gene_id)
+          GeneeventBroadcaster.broadcast_gene_birth(selected_gene.name)
+        {:error, reason} ->
+          Logger.error("Failed to replenish gene: #{inspect(reason)}")
+      end
+    end)
+
+    Logger.info("Replenishment complete! Added #{count} new genes.")
   end
 end
