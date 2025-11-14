@@ -7,6 +7,7 @@ defmodule Genoblend.Const do
   end
 
   def get_gene_pool() do
+    # Return gene templates WITHOUT coordinates - coordinates will be assigned when genes are created
     [
       %{
         name: "Bubbles McGillicuddy",
@@ -821,15 +822,5 @@ defmodule Genoblend.Const do
         color: "#2e8b57"
       }
     ]
-    |> Enum.map(fn gene ->
-      Map.merge(gene, %{
-        id: Ecto.UUID.generate(),
-        x_coordinate: Enum.random(0..200),
-        y_coordinate: Enum.random(0..200),
-        dead_at: nil,
-        is_alive: true,
-        user_id: "8dadde5c-1ce1-4d63-94cd-eb664a673927"
-      })
-    end)
   end
 end

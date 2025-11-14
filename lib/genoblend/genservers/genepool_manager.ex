@@ -27,11 +27,23 @@ defmodule Genoblend.Genservers.GenepoolManager do
   end
 
   def start_inital_genes() do
-    initial_genes = Const.get_default_genes()
+    initial_gene_templates = Const.get_default_genes()
+
+    # Add random coordinates and other properties to each initial gene
+    initial_genes = Enum.map(initial_gene_templates, fn gene_template ->
+      gene_template
+      |> Map.put(:id, Ecto.UUID.generate())
+      |> Map.put(:x_coordinate, Enum.random(0..200))
+      |> Map.put(:y_coordinate, Enum.random(0..200))
+      |> Map.put(:dead_at, nil)
+      |> Map.put(:is_alive, true)
+      |> Map.put(:user_id, "8dadde5c-1ce1-4d63-94cd-eb664a673927")
+      |> Map.put(:created_at, DateTime.utc_now())
+    end)
 
     # Start initial genes and store them in ETS
     Enum.each(initial_genes, fn gene_data ->
-      Logger.info("Starting initial gene: #{gene_data.name}")
+      Logger.info("Starting initial gene: #{gene_data.name} at (#{gene_data.x_coordinate}, #{gene_data.y_coordinate})")
       # Broadcast gene created event for initial genes
       GenestatsStatsManager.broadcast_on_gene_created(gene_data.id)
       Logger.info("Broadcasting gene birth for initial gene: #{gene_data.name}")
@@ -86,6 +98,7 @@ defmodule Genoblend.Genservers.GenepoolManager do
   def get_all_genes() do
     :ets.tab2list(@ets_table)
     |> Enum.map(fn {_id, state} -> state end)
+    |> Enum.filter(fn state -> Map.get(state, :is_alive, true) end)  # Only return alive genes
   end
 
   def kill_gene(gene_id) do
@@ -263,7 +276,7 @@ defmodule Genoblend.Genservers.GenepoolManager do
     Logger.info("Creating new gene from parents #{parent_1_name} and #{parent_2_name}")
     Logger.info("Randomly selected gene: #{selected_gene.name}")
 
-    # Add game-specific properties to the character
+    # Add game-specific properties to the character with RANDOM coordinates
     enhanced_character_data = selected_gene
       |> Map.put(:id, Ecto.UUID.generate())
       |> Map.put(:x_coordinate, Enum.random(0..200))
@@ -272,6 +285,9 @@ defmodule Genoblend.Genservers.GenepoolManager do
       |> Map.put(:is_alive, true)
       |> Map.put(:user_id, "8dadde5c-1ce1-4d63-94cd-eb664a673927")
       |> Map.put(:justification, "Randomly generated offspring from gene pool")
+      |> Map.put(:created_at, DateTime.utc_now())
+
+    Logger.info("New offspring gene: #{selected_gene.name} at (#{enhanced_character_data.x_coordinate}, #{enhanced_character_data.y_coordinate})")
 
     {:ok, enhanced_character_data}
   end
@@ -313,10 +329,10 @@ defmodule Genoblend.Genservers.GenepoolManager do
     gene_pool = Const.get_gene_pool()
 
     Enum.each(1..count, fn _ ->
-      # Randomly select a gene from the pool
+      # Randomly select a gene template from the pool
       selected_gene = Enum.random(gene_pool)
 
-      # Add game-specific properties
+      # Add game-specific properties with RANDOM coordinates
       gene_data = selected_gene
         |> Map.put(:id, Ecto.UUID.generate())
         |> Map.put(:x_coordinate, Enum.random(0..200))
@@ -324,11 +340,12 @@ defmodule Genoblend.Genservers.GenepoolManager do
         |> Map.put(:dead_at, nil)
         |> Map.put(:is_alive, true)
         |> Map.put(:user_id, "8dadde5c-1ce1-4d63-94cd-eb664a673927")
+        |> Map.put(:created_at, DateTime.utc_now())
 
       # Start the gene
       case start_new_gene(gene_data) do
         {:ok, gene_id, _pid} ->
-          Logger.info("Replenished gene: #{selected_gene.name} (#{gene_id})")
+          Logger.info("Replenished gene: #{selected_gene.name} (#{gene_id}) at (#{gene_data.x_coordinate}, #{gene_data.y_coordinate})")
           # Broadcast gene created and birth events
           GenestatsStatsManager.broadcast_on_gene_created(gene_id)
           GeneeventBroadcaster.broadcast_gene_birth(selected_gene.name)

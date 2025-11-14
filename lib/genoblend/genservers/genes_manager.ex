@@ -59,7 +59,8 @@ defmodule Genoblend.Genservers.GenesManager do
       dead_at: gene.dead_at,
       is_alive: gene.is_alive,
       user_id: gene.user_id,
-      movement_timer: nil
+      movement_timer: nil,
+      created_at: Map.get(gene, :created_at, DateTime.utc_now())
     }
 
     # Start recurring movement timer

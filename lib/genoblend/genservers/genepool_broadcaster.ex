@@ -59,9 +59,10 @@ defmodule Genoblend.Genservers.GenepoolBroadcaster do
 
   defp broadcast_gene_data do
     try do
-      # Read all genes from ETS table
+      # Read all genes from ETS table and filter out dead genes
       genes = :ets.tab2list(@ets_table)
       |> Enum.map(fn {_id, state} -> state end)
+      |> Enum.filter(fn state -> Map.get(state, :is_alive, true) end)  # Only broadcast alive genes
       |> Enum.map(&format_gene_for_broadcast/1)
 
       # Get connected clients count
@@ -72,7 +73,7 @@ defmodule Genoblend.Genservers.GenepoolBroadcaster do
         timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
       })
 
-      Logger.warning("Broadcasted #{length(genes)} genes to room:genes")
+      Logger.warning("Broadcasted #{length(genes)} alive genes to room:genes")
     rescue
       error ->
         Logger.error("Failed to broadcast gene data: #{inspect(error)}")
